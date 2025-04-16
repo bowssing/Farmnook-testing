@@ -19,6 +19,15 @@ const firebaseConfig = {
   measurementId: "G-KLPF2Y5LNL",
 };
 
+// for .env file
+// VITE_FIREBASE_APIKEY=AIzaSyDF4Y-Bdtur8lS2Nk6sTTDq4UQYIonh0u0
+// VITE_FIREBASE_AUTHDOMAIN=farmnook-database-4e0e8.firebaseapp.com
+// VITE_FIREBASE_PROJECTID=farmnook-database-4e0e8
+// VITE_FIREBASE_STORAGEBUCKET=farmnook-database-4e0e8.firebasestorage.app
+// VITE_FIREBASE_MESSAGINGSENDERID=517240344964
+// VITE_FIREBASE_APPID=1:517240344964:web:7fe737c45691710dc80dd1
+// VITE_FIREBASE_MEASUREMENTID=G-KLPF2Y5LNL
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
