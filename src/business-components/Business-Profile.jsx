@@ -53,7 +53,7 @@ export default function BusinessProfile() {
           const subscriptionsRef = collection(db, "subscriptions");
           const qSubscriptions = query(
             subscriptionsRef,
-            where("userId", "==", userId)
+            where("businessId", "==", userId)
           );
           const subscriptionSnapshot = await getDocs(qSubscriptions);
           setIsSubscribed(!subscriptionSnapshot.empty);

@@ -58,9 +58,10 @@ export default function Sidebar({
     { id: 1, name: "Dashboard", icon: dashboardIcon, route: "/dashboard" },
     { id: 2, name: "Haulers", icon: driversIcon, route: "/haulers" },
     { id: 3, name: "Vehicles", icon: vehiclesIcon, route: "/vehicles" },
-    { id: 4, name: "Reviews", icon: reviewIcon, route: "/reviews" },
-    { id: 5, name: "Map", icon: mapIcon, route: "/maps" },
-    { id: 6, name: "Profile", icon: profileIcon, route: "/profile" },
+    { id: 4, name: "History", icon: reviewIcon, route: "/history" },
+    { id: 5, name: "Reviews", icon: reviewIcon, route: "/reviews" },
+    { id: 6, name: "Map", icon: mapIcon, route: "/maps" },
+    { id: 7, name: "Profile", icon: profileIcon, route: "/profile" },
   ];
 
   return (
