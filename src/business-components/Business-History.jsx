@@ -13,6 +13,8 @@ export default function History() {
   const [historyData, setHistoryData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEntry, setSelectedEntry] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
   const getReadableLocation = async (coords) => {
     if (!coords) return "No location";
@@ -37,7 +39,9 @@ export default function History() {
         setIsLoading(true);
         const currentUserId = localStorage.getItem("userId");
 
-        const deliveryHistorySnapshot = await getDocs(collection(db, "deliveryHistory"));
+        const deliveryHistorySnapshot = await getDocs(
+          collection(db, "deliveryHistory")
+        );
         const matchedHistory = [];
 
         for (const historyDoc of deliveryHistorySnapshot.docs) {
@@ -74,7 +78,6 @@ export default function History() {
 
           const requestData = requestSnap.data();
 
-          // Get vehicleType from vehicles collection
           let vehicleType = "Unknown";
           if (requestData.vehicleId) {
             const vehicleRef = doc(db, "vehicles", requestData.vehicleId);
@@ -84,13 +87,18 @@ export default function History() {
             }
           }
 
-          const pickupLocation = await getReadableLocation(requestData.pickupLocation);
-          const destinationLocation = await getReadableLocation(requestData.destinationLocation);
+          const pickupLocation = await getReadableLocation(
+            requestData.pickupLocation
+          );
+          const destinationLocation = await getReadableLocation(
+            requestData.destinationLocation
+          );
 
           const deliveryArrivalTime = historyData.deliveryArrivalTime;
           const formattedArrivalTime = deliveryArrivalTime?.toDate
             ? deliveryArrivalTime.toDate().toLocaleString()
             : "No arrival time";
+          const dateObject = deliveryArrivalTime?.toDate?.() || new Date(0);
 
           matchedHistory.push({
             id: historyDoc.id,
@@ -101,10 +109,14 @@ export default function History() {
             productType: requestData.productType,
             purpose: requestData.purpose,
             timestamp: formattedArrivalTime,
+            timestampRaw: dateObject,
             pickupLocation,
             destinationLocation,
           });
         }
+
+        // Sort by timestamp (newest first)
+        matchedHistory.sort((a, b) => b.timestampRaw - a.timestampRaw);
 
         setHistoryData(matchedHistory);
       } catch (error) {
@@ -117,14 +129,67 @@ export default function History() {
     fetchHistory();
   }, []);
 
+  const filteredHistory = historyData.filter((entry) => {
+    const query = searchQuery.toLowerCase();
+    const queryMatch =
+    entry.farmerName.toLowerCase().includes(query) ||
+    entry.haulerName.toLowerCase().includes(query) ||
+    entry.vehicleType.toLowerCase().includes(query);
+
+
+    const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+    const toDate = dateRange.to ? new Date(dateRange.to) : null;
+
+    const inRange =
+      (!fromDate || entry.timestampRaw >= fromDate) &&
+      (!toDate || entry.timestampRaw <= toDate);
+
+    return queryMatch && inRange;
+  });
+
   return (
     <div className="antialiased bg-white flex flex-col items-center min-h-screen py-10">
       <div className="container mx-auto px-4 sm:px-8">
-        <h1 className="text-2xl font-bold text-[#1A4D2E] mb-6">Delivery History</h1>
+        <h1 className="text-2xl font-bold text-[#1A4D2E] mb-6">
+          Delivery History
+        </h1>
+
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Search by Farmer, Hauler, or Vehicle Used"
+            className="border px-3 py-2 rounded w-full md:w-1/3"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <input
+              type="date"
+              className="border px-3 py-2 rounded"
+              value={dateRange.from}
+              onChange={(e) =>
+                setDateRange((prev) => ({ ...prev, from: e.target.value }))
+              }
+            />
+            <input
+              type="date"
+              className="border px-3 py-2 rounded"
+              value={dateRange.to}
+              onChange={(e) =>
+                setDateRange((prev) => ({ ...prev, to: e.target.value }))
+              }
+            />
+          </div>
+        </div>
+
+        <div className="mb-2 text-gray-600">
+          Total Deliveries: {filteredHistory.length}
+        </div>
 
         {isLoading ? (
           <p className="text-center text-gray-600">Loading history...</p>
-        ) : historyData.length === 0 ? (
+        ) : filteredHistory.length === 0 ? (
           <p className="text-center text-gray-600">No delivery history found.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -138,7 +203,7 @@ export default function History() {
                 </tr>
               </thead>
               <tbody>
-                {historyData.map((entry) => (
+                {filteredHistory.map((entry) => (
                   <tr
                     key={entry.id}
                     className="text-gray-800 border-b hover:bg-gray-100 cursor-pointer"
@@ -160,18 +225,41 @@ export default function History() {
       {selectedEntry && (
         <div className="fixed inset-0 bg-white bg-opacity-40 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg relative">
-            <h2 className="text-xl font-semibold text-[#1A4D2E] mb-4">Delivery Details</h2>
+            <h2 className="text-xl font-semibold text-[#1A4D2E] mb-4">
+              Delivery Details
+            </h2>
             <ul className="space-y-2 text-gray-700 text-sm">
-              <li><strong>Delivery ID:</strong> {selectedEntry.id}</li>
-              <li><strong>Hauler Assigned:</strong> {selectedEntry.haulerName}</li>
-              <li><strong>Farmer Name:</strong> {selectedEntry.farmerName}</li>
-              <li><strong>Vehicle Type:</strong> {selectedEntry.vehicleType}</li>
-              <li><strong>Product Type:</strong> {selectedEntry.productType}</li>
-              <li><strong>Purpose:</strong> {selectedEntry.purpose}</li>
-              <li><strong>Weight:</strong> {selectedEntry.weight} KG</li>
-              <li><strong>Date Completed:</strong> {selectedEntry.timestamp}</li>
-              <li><strong>Pickup Location:</strong> {selectedEntry.pickupLocation}</li>
-              <li><strong>Destination Location:</strong> {selectedEntry.destinationLocation}</li>
+              <li>
+                <strong>Delivery ID:</strong> {selectedEntry.id}
+              </li>
+              <li>
+                <strong>Hauler Assigned:</strong> {selectedEntry.haulerName}
+              </li>
+              <li>
+                <strong>Farmer Name:</strong> {selectedEntry.farmerName}
+              </li>
+              <li>
+                <strong>Vehicle Type:</strong> {selectedEntry.vehicleType}
+              </li>
+              <li>
+                <strong>Product Type:</strong> {selectedEntry.productType}
+              </li>
+              <li>
+                <strong>Purpose:</strong> {selectedEntry.purpose}
+              </li>
+              <li>
+                <strong>Weight:</strong> {selectedEntry.weight} KG
+              </li>
+              <li>
+                <strong>Date Completed:</strong> {selectedEntry.timestamp}
+              </li>
+              <li>
+                <strong>Pickup Location:</strong> {selectedEntry.pickupLocation}
+              </li>
+              <li>
+                <strong>Destination Location:</strong>{" "}
+                {selectedEntry.destinationLocation}
+              </li>
             </ul>
             <button
               onClick={() => setSelectedEntry(null)}
